@@ -1609,22 +1609,6 @@ __check_end_of_life_versions() {
 }
 
 
-#---  FUNCTION  -------------------------------------------------------------------------------------------------------
-#          NAME:  __check_and_refresh_suse_pkg_repo
-#   DESCRIPTION:  Check if zypper knows about systemsmanagement_saltstack repo yet.
-#                 If it doesn't, add the repo and refresh with the SUSE_PKG_URL.
-#----------------------------------------------------------------------------------------------------------------------
-__check_and_refresh_suse_pkg_repo() {
-    # Check to see if systemsmanagement_saltstack exists
-    __zypper repos | grep systemsmanagement_saltstack >/dev/null 2>&1
-
-    if [ $? -eq 1 ]; then
-        # zypper does not yet know anything about systemsmanagement_saltstack
-        __zypper addrepo --refresh "${SUSE_PKG_URL}" || return 1
-    fi
-}
-
-
 __gather_system_info
 
 echo
@@ -5349,6 +5333,16 @@ install_smartos_restart_daemons() {
 #
 __ZYPPER_REQUIRES_REPLACE_FILES=-1
 
+__check_and_refresh_suse_pkg_repo() {
+    # Check to see if systemsmanagement_saltstack exists
+    __zypper repos | grep systemsmanagement_saltstack >/dev/null 2>&1
+
+    if [ $? -eq 1 ]; then
+        # zypper does not yet know anything about systemsmanagement_saltstack
+        __zypper addrepo --refresh "${SUSE_PKG_URL}" || return 1
+    fi
+}
+
 __set_suse_pkg_repo() {
     suse_pkg_url_path="${DISTRO_REPO}/systemsmanagement:saltstack.repo"
     if [ "$_DOWNSTREAM_PKG_REPO" -eq $BS_TRUE ]; then
@@ -6341,12 +6335,12 @@ config_salt() {
 
         # Copy the minion's keys if found
         if [ -f "$_TEMP_CONFIG_DIR/minion.pem" ]; then
-            __movefile "$_TEMP_CONFIG_DIR/minion.pem" "$_PKI_DIR/minion/" "$_CONFIG_ONLY" || return 1
+            __movefile "$_TEMP_CONFIG_DIR/minion.pem" "$_PKI_DIR/minion/" "$_FORCE_OVERWRITE" || return 1
             chmod 400 "$_PKI_DIR/minion/minion.pem" || return 1
             CONFIGURED_ANYTHING=$BS_TRUE
         fi
         if [ -f "$_TEMP_CONFIG_DIR/minion.pub" ]; then
-            __movefile "$_TEMP_CONFIG_DIR/minion.pub" "$_PKI_DIR/minion/" "$_CONFIG_ONLY" || return 1
+            __movefile "$_TEMP_CONFIG_DIR/minion.pub" "$_PKI_DIR/minion/" "$_FORCE_OVERWRITE" || return 1
             chmod 664 "$_PKI_DIR/minion/minion.pub" || return 1
             CONFIGURED_ANYTHING=$BS_TRUE
         fi
